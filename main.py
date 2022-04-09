@@ -29,9 +29,10 @@ def welcome(message):
     item2 = types.KeyboardButton("добавить книгу в 'мои желания' (/add)")
     item3 = types.KeyboardButton("удалить книгу из 'мои желания' (/del)")
     item4 = types.KeyboardButton("удалить все записи из 'мои желания' (или /all)")
+    item5 = types.KeyboardButton("я - Админ (/admin)")
 
     # добавляем кнопки
-    markup.add(item1, item2, item3, item4)
+    markup.add(item1, item2, item3, item4, item5)
 
     # приветственное сообщение
     bot.send_message(message.chat.id,
@@ -111,9 +112,51 @@ def del_all(message_):
     cur.close()
 
 
+@bot.message_handler(commands=['admin'])
+def admin(message):
+    title = ' '.join(str(message.text).split()[1:])
+
+    import sqlite3
+    con = sqlite3.connect("database.sqlite")
+    cur = con.cursor()
+
+    # если admin_status не True
+    if not cur.execute("""SELECT admin_status FROM name WHERE id = ?""", (message.from_user.id,)) == True:
+
+        # если пароль подходит
+        if config.password == title:
+            bot.send_message(message.chat.id, 'теперь вы админ')
+
+            import sqlite3
+            con = sqlite3.connect("database.sqlite")
+            cur = con.cursor()
+            cur.execute("""UPDATE name SET admin_status = ? WHERE id = ?""", ('True', message.from_user.id,))
+            con.commit()
+            cur.close()
+
+            # создаем кнопки для управления
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            item_1 = types.KeyboardButton("список всех пользователей")
+            item_2 = types.KeyboardButton("список всех книг пользователей (могут повторяться)")
+
+            # добавляем кнопки
+            markup.add(item_1, item_2)
+
+        # если пароль не подходит
+        else:
+            bot.send_message(message.chat.id, 'неправильный пароль')
+
+    else:
+        bot.send_message(message.chat.id, 'вы админ')
+
+
 @bot.message_handler(content_types=['text'])
 def when_text(message):
     if message.chat.type == 'private':
+        import sqlite3
+        con = sqlite3.connect("database.sqlite")
+        cur = con.cursor()
+
         if message.text == "список 'мои желания'":
 
             import sqlite3
@@ -133,10 +176,21 @@ def when_text(message):
             bot.send_message(message.chat.id,
                              'что-бы удалить книгу из мои желания использйте команду "/del (введите название книги)"')
 
+        elif message.text == "я - Админ (/admin)":
+            bot.send_message(message.chat.id, 'если вы админ /admin (пароль из файла config)')
+
         elif message.text == "удалить все записи из 'мои желания' (или /all)":
             bot.send_message(message.chat.id, 'что-бы удалить все книги из "мои желания" использйте команду "/all"')
+        # только для админов
+
+        elif message.text == "список всех пользователей" and cur.execute(
+                """SELECT admin_status FROM name WHERE id = ?""", (message.from_user.id,)) == True:
+            print("список всех пользователей")
+
+        #
         else:
             bot.send_message(message.chat.id, 'Я не знаю что ответить')
+        cur.close()
 
 
 # RUN
