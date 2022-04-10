@@ -18,7 +18,8 @@ def welcome(message):
     # если нет записи  о пользователе в бд, создаем запись
     if not cur.execute("""SELECT id FROM name WHERE id = ?""", (message.from_user.id,)).fetchall():
         # создаем запись в бд с новым ид
-        cur.execute("""INSERT INTO name(id) VALUES(?)""", (message.from_user.id,))
+        cur.execute("""INSERT INTO name(username, id) VALUES(?, ?)""",
+                    (message.from_user.first_name, message.from_user.id,))
 
     con.commit()
     cur.close()
@@ -119,9 +120,12 @@ def admin(message):
     import sqlite3
     con = sqlite3.connect("database.sqlite")
     cur = con.cursor()
+    for i in cur.execute("""SELECT admin_status FROM name WHERE id = ?""", (message.from_user.id,)):
+        temp = i[0]
+    cur.close()
 
     # если admin_status не True
-    if not cur.execute("""SELECT admin_status FROM name WHERE id = ?""", (message.from_user.id,)) == True:
+    if not temp:
 
         # если пароль подходит
         if config.password == title:
@@ -134,14 +138,6 @@ def admin(message):
             con.commit()
             cur.close()
 
-            # создаем кнопки для управления
-            markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            item_1 = types.KeyboardButton("список всех пользователей")
-            item_2 = types.KeyboardButton("список всех книг пользователей (могут повторяться)")
-
-            # добавляем кнопки
-            markup.add(item_1, item_2)
-
         # если пароль не подходит
         else:
             bot.send_message(message.chat.id, 'неправильный пароль')
@@ -149,13 +145,38 @@ def admin(message):
     else:
         bot.send_message(message.chat.id, 'вы админ')
 
+        # создаем кнопки для управления
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        item_1 = types.KeyboardButton("список всех пользователей")
+        item_2 = types.KeyboardButton("список всех книг пользователей (могут повторяться)")
+
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        item1 = types.KeyboardButton("список 'мои желания'")
+        item2 = types.KeyboardButton("добавить книгу в 'мои желания' (/add)")
+        item3 = types.KeyboardButton("удалить книгу из 'мои желания' (/del)")
+        item4 = types.KeyboardButton("удалить все записи из 'мои желания' (или /all)")
+        item5 = types.KeyboardButton("я - Админ (/admin)")
+
+        # добавляем кнопки
+        markup.add(item1, item2, item3, item4, item5, item_1, item_2)
+
+        bot.send_message(message.chat.id,
+                         "Добро пожаловать, {0.first_name}, теперь вы админ на этом сервере по маинкрафту".format(
+                             message.from_user), parse_mode='html', reply_markup=markup)
+
 
 @bot.message_handler(content_types=['text'])
 def when_text(message):
     if message.chat.type == 'private':
+
         import sqlite3
         con = sqlite3.connect("database.sqlite")
         cur = con.cursor()
+        temp = ''
+
+        for i in cur.execute("""SELECT admin_status FROM name WHERE id = ?""", (message.from_user.id,)):
+            temp = i[0]
+        cur.close()
 
         if message.text == "список 'мои желания'":
 
@@ -183,14 +204,21 @@ def when_text(message):
             bot.send_message(message.chat.id, 'что-бы удалить все книги из "мои желания" использйте команду "/all"')
         # только для админов
 
-        elif message.text == "список всех пользователей" and cur.execute(
-                """SELECT admin_status FROM name WHERE id = ?""", (message.from_user.id,)) == True:
-            print("список всех пользователей")
+        elif message.text == "список всех пользователей" and temp == 'True':
+            import sqlite3
+            con = sqlite3.connect("database.sqlite")
+            cur = con.cursor()
+
+            spis = []
+            for i in cur.execute("""SELECT username FROM name"""):
+                spis.append(i[0])
+            viv = ' | '.join(spis)
+            bot.send_message(message.chat.id, viv)
+            con.close()
 
         #
         else:
             bot.send_message(message.chat.id, 'Я не знаю что ответить')
-        cur.close()
 
 
 # RUN
