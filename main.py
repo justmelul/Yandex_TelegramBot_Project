@@ -143,16 +143,16 @@ def admin(message):
             markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
             item_1 = types.KeyboardButton("список всех пользователей")
             item_2 = types.KeyboardButton("список всех книг пользователей (могут повторяться)")
+            item_3 = types.KeyboardButton("удалить все записи пользователей")
 
             markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
             item1 = types.KeyboardButton("список 'мои желания'")
             item2 = types.KeyboardButton("добавить книгу в 'мои желания' (/add)")
             item3 = types.KeyboardButton("удалить книгу из 'мои желания' (/del)")
             item4 = types.KeyboardButton("удалить все записи из 'мои желания' (или /all)")
-            item5 = types.KeyboardButton("я - Админ (/admin)")
 
             # добавляем кнопки
-            markup.add(item1, item2, item3, item4, item5, item_1, item_2)
+            markup.add(item1, item2, item3, item4, item_1, item_2, item_3)
 
             bot.send_message(message.chat.id,
                              "Добро пожаловать, {0.first_name}, теперь вы админ на этом сервере по маинкрафту".format(
@@ -168,19 +168,20 @@ def admin(message):
         bot.send_message(message.chat.id, 'вы админ')
 
         # создаем кнопки для управления
+
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
         item_1 = types.KeyboardButton("список всех пользователей")
         item_2 = types.KeyboardButton("список всех книг пользователей (могут повторяться)")
+        item_3 = types.KeyboardButton("удалить все записи пользователей")
 
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
         item1 = types.KeyboardButton("список 'мои желания'")
         item2 = types.KeyboardButton("добавить книгу в 'мои желания' (/add)")
         item3 = types.KeyboardButton("удалить книгу из 'мои желания' (/del)")
         item4 = types.KeyboardButton("удалить все записи из 'мои желания' (или /all)")
-        item5 = types.KeyboardButton("я - Админ (/admin)")
 
         # добавляем кнопки
-        markup.add(item1, item2, item3, item4, item5, item_1, item_2)
+        markup.add(item1, item2, item3, item4, item_1, item_2, item_3)
 
         bot.send_message(message.chat.id,
                          "Добро пожаловать, {0.first_name}, теперь вы админ на этом сервере по маинкрафту".format(
@@ -224,7 +225,9 @@ def when_text(message):
 
         elif message.text == "удалить все записи из 'мои желания' (или /all)":
             bot.send_message(message.chat.id, 'что-бы удалить все книги из "мои желания" использйте команду "/all"')
+
         # только для админов
+        # список всех пользователей
 
         elif message.text == "список всех пользователей" and temp == 'True':
             import sqlite3
@@ -237,6 +240,8 @@ def when_text(message):
             viv = ' | '.join(spis)
             bot.send_message(message.chat.id, viv)
             con.close()
+
+        # список всех книг пользователей (могут повторяться)
 
         elif message.text == "список всех книг пользователей (могут повторяться)" and temp == 'True':
             import sqlite3
@@ -254,6 +259,21 @@ def when_text(message):
 
             bot.send_message(message.chat.id, razdelenie)
             con.close()
+
+        # удалить все записи пользователей
+
+        elif message.text == "удалить все записи пользователей" and temp == 'True':
+
+            import sqlite3
+            con = sqlite3.connect("database.sqlite")
+            cur = con.cursor()
+
+            cur.execute("""UPDATE name SET favorites = ?""", ('',))
+
+            con.commit()
+            cur.close()
+
+            bot.send_message(message.chat.id, 'записи удалены')
 
         #
         else:
