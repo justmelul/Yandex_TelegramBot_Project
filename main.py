@@ -129,7 +129,6 @@ def admin(message):
 
         # если пароль подходит
         if config.password == title:
-            bot.send_message(message.chat.id, 'теперь вы админ')
 
             import sqlite3
             con = sqlite3.connect("database.sqlite")
@@ -137,6 +136,29 @@ def admin(message):
             cur.execute("""UPDATE name SET admin_status = ? WHERE id = ?""", ('True', message.from_user.id,))
             con.commit()
             cur.close()
+
+            bot.send_message(message.chat.id, 'вы админ')
+
+            # создаем кнопки для управления
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            item_1 = types.KeyboardButton("список всех пользователей")
+            item_2 = types.KeyboardButton("список всех книг пользователей (могут повторяться)")
+
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            item1 = types.KeyboardButton("список 'мои желания'")
+            item2 = types.KeyboardButton("добавить книгу в 'мои желания' (/add)")
+            item3 = types.KeyboardButton("удалить книгу из 'мои желания' (/del)")
+            item4 = types.KeyboardButton("удалить все записи из 'мои желания' (или /all)")
+            item5 = types.KeyboardButton("я - Админ (/admin)")
+
+            # добавляем кнопки
+            markup.add(item1, item2, item3, item4, item5, item_1, item_2)
+
+            bot.send_message(message.chat.id,
+                             "Добро пожаловать, {0.first_name}, теперь вы админ на этом сервере по маинкрафту".format(
+                                 message.from_user), parse_mode='html', reply_markup=markup)
+
+
 
         # если пароль не подходит
         else:
@@ -214,6 +236,23 @@ def when_text(message):
                 spis.append(i[0])
             viv = ' | '.join(spis)
             bot.send_message(message.chat.id, viv)
+            con.close()
+
+        elif message.text == "список всех книг пользователей (могут повторяться)" and temp == 'True':
+            import sqlite3
+            con = sqlite3.connect("database.sqlite")
+            cur = con.cursor()
+
+            spis = []
+            for i in cur.execute("""SELECT favorites FROM name"""):
+                spis.append(i[0])
+
+            razdelenie = ''
+            for i in spis:
+                razdelenie += ' || '
+                razdelenie += ' | '.join(str(i).split(';'))
+
+            bot.send_message(message.chat.id, razdelenie)
             con.close()
 
         #
