@@ -46,32 +46,37 @@ def welcome(message):
 # при команде /add вызывается эта часть кода
 @bot.message_handler(commands=['add'])
 def add_to_fav(message):
-    # title -- текст написаный поьзователем посе /add
+    # title -- текст написаный пользователем посе /add
     title = ' '.join(str(message.text).split()[1:])
 
     import sqlite3
     con = sqlite3.connect("database.sqlite")
     cur = con.cursor()
 
-    # for нужен для того что-бы понять, есть-ли записи о пользователе в бд
-    for i in cur.execute("""SELECT favorites FROM name WHERE id = ?""", (message.from_user.id,)):
-        # если запись есть
-        con = sqlite3.connect("database.sqlite")
-        cur = con.cursor()
+    # if будет действовать если название книги не равно ''
+    if title != '':
 
-        if str(i[0]) != 'None':
-            viv = str(i[0]) + f';{title}'
-            bot.send_message(message.chat.id, ' | '.join(viv.split(';')))
-            cur.execute("""UPDATE name SET favorites = ? WHERE id = ?""", (viv, message.from_user.id,))
+        # for нужен для того что-бы понять, есть-ли записи о пользователе в бд
+        for i in cur.execute("""SELECT favorites FROM name WHERE id = ?""", (message.from_user.id,)):
+            # если запись есть
+            con = sqlite3.connect("database.sqlite")
+            cur = con.cursor()
 
-        # если записи о пользователе нет
-        else:
-            viv = f'{title}'
-            bot.send_message(message.chat.id, ' | '.join(viv.split(';')))
-            cur.execute("""UPDATE name SET favorites = ? WHERE id = ?""", (viv, message.from_user.id,))
+            if str(i[0]) != 'None':
+                viv = str(i[0]) + f';{title}'
+                bot.send_message(message.chat.id, ' | '.join(viv.split(';')))
+                cur.execute("""UPDATE name SET favorites = ? WHERE id = ?""", (viv, message.from_user.id,))
 
-        con.commit()
-        cur.close()
+            # если записи о пользователе нет
+            else:
+                viv = f'{title}'
+                bot.send_message(message.chat.id, ' | '.join(viv.split(';')))
+                cur.execute("""UPDATE name SET favorites = ? WHERE id = ?""", (viv, message.from_user.id,))
+
+            con.commit()
+            cur.close()
+    con.commit()
+    cur.close()
 
 
 # при команде /del вызывается эта часть кода
@@ -102,6 +107,7 @@ def del_from_fav(message):
         cur.close()
 
 
+# удалить все записи из 'мои желания' (или /all)
 @bot.message_handler(commands=['all'])
 def del_all(message_):
     import sqlite3
@@ -113,6 +119,8 @@ def del_all(message_):
     cur.close()
 
 
+# я - Админ (/admin)
+# что-бы стать админом
 @bot.message_handler(commands=['admin'])
 def admin(message):
     title = ' '.join(str(message.text).split()[1:])
@@ -188,6 +196,7 @@ def admin(message):
                              message.from_user), parse_mode='html', reply_markup=markup)
 
 
+# если пользователь отправил текст :
 @bot.message_handler(content_types=['text'])
 def when_text(message):
     if message.chat.type == 'private':
